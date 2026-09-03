@@ -95,3 +95,39 @@ def test_constant_velocity_baseline_matches_the_released_statistics(name):
     assert baseline == pytest.approx(expected, rel=0.5)
     # The paper's model must beat this baseline by several times over.
     assert paper.one_step_mse(name) < baseline / 3
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("name", ["Goop"])
+def test_conversion_is_lossless(name):
+    """The HDF5 copy must reproduce the released TFRecord exactly.
+
+    The conversion only reorders particles so obstacles come first, so every
+    position must survive it bit for bit.
+    """
+    import os
+
+    from gns.data.tfrecord import read_trajectories
+
+    raw = Path(
+        os.environ.get("GNS_RAW_ROOT", Path.home() / "ceph" / "gns-repro" / "raw")
+    ) / name
+    if not (raw / "test.tfrecord").exists():
+        pytest.skip(f"{name} raw TFRecords are not downloaded at {raw}")
+
+    path = dataset_path(name)
+    metadata = Metadata.load(path)
+    store = TrajectoryStore(path, "test", metadata.dim)
+    stream = read_trajectories(raw / "test.tfrecord", metadata.dim)
+    for index, (positions, types) in enumerate(stream):
+        if index >= 3:
+            break
+        converted = store[index]
+        order = np.concatenate(
+            [
+                np.flatnonzero(types == KINEMATIC_PARTICLE_ID),
+                np.flatnonzero(types != KINEMATIC_PARTICLE_ID),
+            ]
+        )
+        np.testing.assert_array_equal(converted.positions, positions[:, order])
+        np.testing.assert_array_equal(converted.particle_types, types[order])

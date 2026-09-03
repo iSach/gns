@@ -17,7 +17,11 @@ import torch
 
 from gns import INPUT_SEQUENCE_LENGTH, datasets
 from gns.data.trajectories import TrajectoryStore
-from gns.evaluation.metrics import one_step_metrics, rollout_metrics
+from gns.evaluation.metrics import (
+    constant_velocity_baseline,
+    one_step_metrics,
+    rollout_metrics,
+)
 from gns.metadata import Metadata
 from gns.models.simulator import LearnedSimulator, SimulatorConfig
 
@@ -89,6 +93,9 @@ def main() -> int:
         "rollout_mse_all_particles": rollouts.mse_all_particles,
         "rollout_trajectories": rollouts.num_trajectories,
         "per_step_rollout_mse": rollouts.per_step_mse.tolist(),
+        "constant_velocity_one_step_mse": constant_velocity_baseline(
+            store, limit=args.one_step_trajectories
+        ),
         **tags,
     }
     out = args.out or args.checkpoint.with_name(

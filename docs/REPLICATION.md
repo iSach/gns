@@ -123,3 +123,26 @@ Rollouts start from the first six ground-truth frames and run
 
 See `figures/table1.md` for the current numbers and the step count they were
 measured at, and `docs/RESULTS.md` for the discussion.
+
+## Things that were tried and did not help
+
+- **A more aggressive peak learning rate.** Section 4.3 says the models "can
+  train in significantly less steps" and that the conservative rate exists to
+  make comparisons across settings fair, which suggests raising it is the way to
+  fit a smaller budget. Probing 3e-4 and 1e-3 against the paper's 1e-4 on Goop,
+  all with the same decay horizon, the training loss at 30k steps was 0.179 and
+  0.204 against about 0.175. Neither helped, so every run here uses the paper's
+  1e-4. `--lr-start` is kept so the probe is repeatable.
+- **CUDA graph capture.** The step issues several hundred small kernels, so
+  launch overhead looked like the obvious target. Capturing the whole step
+  changed the rate by less than 2%: the model is bandwidth bound, not launch
+  bound. `torch.compile(dynamic=True)` does help, by about 20%, through fusion.
+- **Splitting the edge update's first layer across its three inputs.** Projecting
+  the node latents before gathering is the same function with a third of the
+  arithmetic, but the extra gathers made it 40% slower than one concatenation and
+  one matrix multiply.
+- **A noise-free sanity run.** With `--noise-std 0` the normalized acceleration
+  target reaches 71 standard deviations on Goop and training does not converge at
+  all. Inflating the normalization by the noise scale compresses that to 17, so
+  the paper's noise is not only a robustness device: it also makes the regression
+  target well conditioned. A run with noise disabled is not a valid diagnostic.

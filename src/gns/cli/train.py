@@ -32,6 +32,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Steps per decade of learning-rate decay. Default: the paper's 5e6 "
         "for a 20M-step run, scaled down proportionally for a shorter one.",
     )
+    parser.add_argument(
+        "--lr-start",
+        type=float,
+        default=1e-4,
+        help="Peak learning rate. The paper uses 1e-4.",
+    )
     parser.add_argument("--no-compile", action="store_true")
     parser.add_argument(
         "--no-resume",
@@ -90,6 +96,7 @@ def main() -> int:
     config = TrainConfig(
         dataset=args.dataset,
         lr_decay_steps=decay,
+        lr_start=args.lr_start,
         compile_model=not args.no_compile,
         resume=not args.no_resume,
         data_path=str(data_path),

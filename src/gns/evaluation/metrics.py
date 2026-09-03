@@ -17,7 +17,7 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
-from gns import INPUT_SEQUENCE_LENGTH
+from gns import INPUT_SEQUENCE_LENGTH, KINEMATIC_PARTICLE_ID
 from gns.data.trajectories import Trajectory, TrajectoryStore
 from gns.models.simulator import LearnedSimulator, kinematic_mask
 from gns.neighbors import radius_graph_torch
@@ -127,6 +127,34 @@ def rollout_metrics(
         per_step_mse=np.mean(np.stack(curves), axis=0),
         num_trajectories=count,
     )
+
+
+def constant_velocity_baseline(
+    store: TrajectoryStore, limit: int | None = None
+) -> dict[str, float]:
+    """One-step MSE of predicting no acceleration at all.
+
+    This is the score of extrapolating each particle's current velocity, so it
+    is exactly the mean squared true acceleration.  It is the level any learned
+    model has to beat, and it makes an absolute MSE readable: the paper's models
+    sit roughly an order of magnitude below it.
+    """
+    count = len(store) if limit is None else min(limit, len(store))
+    total_all = total_free = 0.0
+    count_all = count_free = 0
+    for index in range(count):
+        trajectory = store[index]
+        positions = trajectory.positions
+        acceleration = positions[2:] - 2 * positions[1:-1] + positions[:-2]
+        free = trajectory.particle_types != KINEMATIC_PARTICLE_ID
+        total_all += float((acceleration**2).sum())
+        count_all += acceleration.size
+        total_free += float((acceleration[:, free] ** 2).sum())
+        count_free += acceleration[:, free].size
+    return {
+        "all_particles": total_all / max(count_all, 1),
+        "free_particles": total_free / max(count_free, 1),
+    }
 
 
 @torch.no_grad()

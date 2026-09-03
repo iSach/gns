@@ -34,11 +34,20 @@ def load_results(directory: Path, pattern: str = "**/result_test_best.json") -> 
     return results
 
 
-def _bar_panel(ax, labels, ours, reference, ylabel, title):
+def _bar_panel(ax, labels, ours, reference, ylabel, title, baseline=None):
     x = np.arange(len(labels))
     width = 0.38
     ax.bar(x - width / 2, reference, width, color=PAPER_COLOR, label="paper")
     ax.bar(x + width / 2, ours, width, color=OURS_COLOR, label="this reimplementation")
+    if baseline is not None:
+        for position, value in zip(x, baseline):
+            if value is None:
+                continue
+            ax.plot(
+                [position - 0.5, position + 0.5], [value, value],
+                color="black", linestyle="--", linewidth=1.0,
+                label="no-model baseline" if position == 0 else None,
+            )
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=8)
     ax.set_yscale("log")
@@ -65,7 +74,12 @@ def figure_table1(results: dict, out: Path, convention: str) -> Path:
         [paper.one_step_mse(name) for name in labels],
         "one-step MSE",
         "One-step position error",
+        baseline=[
+            (r.get("constant_velocity_one_step_mse") or {}).get(key)
+            for _, r in rows
+        ],
     )
+    axes[0].legend(fontsize=7, frameon=False)
     _bar_panel(
         axes[1],
         labels,

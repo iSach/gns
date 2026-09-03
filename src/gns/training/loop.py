@@ -33,9 +33,19 @@ LR_FINAL = 1e-6
 LR_DECAY_STEPS = 5e6
 
 
-def learning_rate(step: int, decay_steps: float = LR_DECAY_STEPS) -> float:
-    """Exponential decay from 1e-4 to 1e-6, as written in Supplementary B.3."""
-    return LR_FINAL + (LR_START - LR_FINAL) * 0.1 ** (step / decay_steps)
+def learning_rate(
+    step: int,
+    decay_steps: float = LR_DECAY_STEPS,
+    start: float = LR_START,
+) -> float:
+    """Exponential decay from ``start`` to 1e-6, as written in Supplementary B.3.
+
+    ``start`` is 1e-4 in the paper.  Section 4.3 says the models "can train in
+    significantly less steps" and that the conservative rate was chosen to make
+    comparisons across settings fair, so raising it is the paper's own answer to
+    a smaller step budget rather than a change of method.
+    """
+    return LR_FINAL + (start - LR_FINAL) * 0.1 ** (step / decay_steps)
 
 
 @dataclass
@@ -50,6 +60,7 @@ class TrainConfig:
     # largest graph in the dataset, packed with as many examples as fit.
     batch_size: int = 2
     lr_decay_steps: float = LR_DECAY_STEPS
+    lr_start: float = LR_START
     compile_model: bool = True
     shuffle_buffer: int = 10_000
     num_workers: int = 8
@@ -116,7 +127,7 @@ def train(config: TrainConfig, device: torch.device) -> Path:
 
     torch.manual_seed(config.seed)
     model = LearnedSimulator(metadata, config.simulator).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR_START)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.lr_start)
     loader = make_loader(config, metadata)
 
     # Every batch has a different number of particles and edges, so the graph is
@@ -126,7 +137,9 @@ def train(config: TrainConfig, device: torch.device) -> Path:
         if config.compile_model and device.type == "cuda"
         else loss_on_batch
     )
-    lr_at = lambda at: learning_rate(at, config.lr_decay_steps)  # noqa: E731
+    lr_at = lambda at: learning_rate(  # noqa: E731
+        at, config.lr_decay_steps, config.lr_start
+    )
 
     start_step = 0
     best = float("inf")

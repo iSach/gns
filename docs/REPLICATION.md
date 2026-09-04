@@ -146,3 +146,25 @@ measured at, and `docs/RESULTS.md` for the discussion.
   all. Inflating the normalization by the noise scale compresses that to 17, so
   the paper's noise is not only a robustness device: it also makes the regression
   target well conditioned. A run with noise disabled is not a valid diagnostic.
+
+## Known limitations of this replication
+
+- **One seed per configuration.** Figure 4 in the paper plots the median across
+  seeds with quartile error bars. Every bar here is a single run, so a
+  difference smaller than the run-to-run spread should not be read as real.
+- **Validation rollout MSE is a noisy selector at this budget.** Measured over
+  five held-out trajectories it swings by up to a factor of twelve between
+  gates: one ablation run scored 0.029, 0.064, 0.015 and 0.186 at 100k, 200k,
+  300k and 400k steps. Full-length rollouts on a handful of chaotic
+  trajectories simply have that much spread. Consequences:
+  - **Table 1** quotes the validation-selected checkpoint, which is the paper's
+    protocol, and every number is reported with the step it came from.
+  - **The ablation figure** quotes the final checkpoint instead, so all
+    seventeen configurations are compared at the same 400k steps. Selecting on
+    validation there would compare one architecture at 100k steps against
+    another at 400k, which measures budget rather than architecture.
+  Both sets of numbers are written for every run, as `result_test_best.json`
+  and `result_test_latest.json`, so either convention can be recomputed.
+- **A reduced step budget.** See the deliberate deviations above. Absolute error
+  levels sit above the published ones; the comparisons between bars, which is
+  what Figure 4 is about, are at a matched budget.

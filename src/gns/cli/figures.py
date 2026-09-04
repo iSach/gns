@@ -135,7 +135,16 @@ def _ablation_label(axis: str, value) -> str:
 
 
 def figure_ablations(results: dict, out: Path, convention: str) -> Path:
-    """Figure 4(a-j): each ablation axis against the default architecture."""
+    """Figure 4(a-j): each ablation axis against the default architecture.
+
+    These bars come from the *final* checkpoint of each run, not the best one.
+    Validation rollout MSE over five trajectories swings by up to a factor of
+    twelve between gates here, so selecting on it puts one configuration's best
+    checkpoint at 100k steps and another's at 400k, and the bars stop comparing
+    architectures and start comparing budgets. The paper avoids this by
+    averaging over seeds and plotting quartiles; at one seed per configuration,
+    a fixed budget is the honest equivalent.
+    """
     key = "free_particles" if convention == "free" else "all_particles"
     grouped: dict[str, dict] = {axis: {} for axis in paper.ABLATION_AXES}
     default = None
@@ -239,11 +248,23 @@ def main() -> int:
         default="free",
         help="Average the MSE over non-obstacle particles only, or over all.",
     )
-    parser.add_argument("--pattern", default="**/result_test_best.json")
+    parser.add_argument(
+        "--pattern",
+        default="**/result_test_best.json",
+        help="Results for Table 1 and the error curve: the paper selects the "
+        "checkpoint on validation rollout MSE.",
+    )
+    parser.add_argument(
+        "--ablation-pattern",
+        default="**/result_test_latest.json",
+        help="Results for the ablation figure: the final checkpoint, so every "
+        "configuration is compared at the same budget.",
+    )
     args = parser.parse_args()
 
     results = load_results(args.results, args.pattern)
-    if not results:
+    ablation_results = load_results(args.results, args.ablation_pattern)
+    if not results and not ablation_results:
         raise SystemExit(f"No results matching {args.pattern} under {args.results}")
 
     wanted = (
@@ -259,7 +280,7 @@ def main() -> int:
                 print(f"wrote {figure_error_vs_time(results, args.out / 'error_vs_time.png')}")
             else:
                 path = figure_ablations(
-                    results, args.out / "ablations.png", args.convention
+                    ablation_results, args.out / "ablations.png", args.convention
                 )
                 print(f"wrote {path}")
         except SystemExit as error:

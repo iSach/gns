@@ -3,12 +3,12 @@
 import numpy as np
 import pytest
 import torch
+from tests.test_model import toy_metadata
 
 from gns import INPUT_SEQUENCE_LENGTH, KINEMATIC_PARTICLE_ID
 from gns.data.trajectories import Trajectory
 from gns.evaluation.metrics import RolloutResult, rollout
 from gns.models.simulator import LearnedSimulator, SimulatorConfig, kinematic_mask
-from tests.test_model import toy_metadata
 
 
 def toy_trajectory(num_frames=12, num_particles=40, num_obstacles=8, seed=0):

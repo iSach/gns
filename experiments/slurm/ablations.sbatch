@@ -17,7 +17,9 @@
 #SBATCH --output=logs/slurm/ablations_%A_%a.out
 #SBATCH --requeue
 set -euo pipefail
-source "$(dirname "$0")/common.sh"
+# Slurm runs a spool copy of this file, so "$0" is not in the repository.
+# SLURM_SUBMIT_DIR is where sbatch was invoked; GNS_REPO overrides it.
+source "${GNS_REPO:-${SLURM_SUBMIT_DIR:-$PWD}}/experiments/slurm/common.sh"
 
 : "${GNS_ABL_STEPS:=400000}"
 : "${GNS_ABL_DATASET:=Goop}"

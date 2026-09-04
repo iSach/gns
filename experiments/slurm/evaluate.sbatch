@@ -12,7 +12,9 @@
 #SBATCH --time=08:00:00
 #SBATCH --output=logs/slurm/evaluate_%j.out
 set -euo pipefail
-source "$(dirname "$0")/common.sh"
+# Slurm runs a spool copy of this file, so "$0" is not in the repository.
+# SLURM_SUBMIT_DIR is where sbatch was invoked; GNS_REPO overrides it.
+source "${GNS_REPO:-${SLURM_SUBMIT_DIR:-$PWD}}/experiments/slurm/common.sh"
 
 echo "host $(hostname)  gpu $(nvidia-smi --query-gpu=name --format=csv,noheader)"
 GNS_FIGURES=${GNS_FIGURES:-figures} bash experiments/evaluate_all.sh

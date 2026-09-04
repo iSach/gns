@@ -21,12 +21,15 @@ mkdir -p "$GNS_RUNS" logs/slurm
 # and the trainer resumes from latest.pt automatically, so write them often.
 : "${GNS_CHECKPOINT_EVERY:=10000}"
 
+# The trainer holds a heartbeat lock while it runs and releases it on SIGTERM,
+# so this only fires when a trainer really is alive.  An mtime check on the
+# checkpoint does not work: a cancelled job leaves one that looks seconds old
+# for as long as it takes Slurm to reschedule, and the replacement refuses.
 refuse_if_already_running () {   # refuse_if_already_running <run-dir>
-  local checkpoint="$1/latest.pt"
-  if [ -e "$checkpoint" ] && [ -n "$(find "$checkpoint" -mmin -3 2>/dev/null)" ]; then
-    echo "REFUSING: $checkpoint was written in the last 3 minutes, so another" >&2
-    echo "trainer is probably live on this run directory. Stop it first:" >&2
-    echo "  bash experiments/stop_local.sh" >&2
+  local lock="$1/RUNNING.json"
+  if [ -e "$lock" ] && [ -n "$(find "$lock" -mmin -1.5 2>/dev/null)" ]; then
+    echo "REFUSING: $lock is warm, so a trainer is live on this run directory." >&2
+    cat "$lock" >&2
     exit 3
   fi
 }

@@ -22,6 +22,7 @@ from gns.data.trajectories import TrajectoryStore
 from gns.evaluation.metrics import rollout_metrics
 from gns.metadata import Metadata
 from gns.models.simulator import LearnedSimulator, SimulatorConfig
+from gns.training.run_lock import RunLock, describe, held
 
 LR_START = 1e-4
 LR_FINAL = 1e-6
@@ -121,6 +122,14 @@ def loss_on_batch(model: LearnedSimulator, batch: Batch) -> torch.Tensor:
 def train(config: TrainConfig, device: torch.device) -> Path:
     run_dir = Path(config.run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
+    if held(run_dir):
+        holder = describe(run_dir)
+        raise SystemExit(
+            f"Another trainer holds {run_dir}: "
+            f"pid {holder.get('pid')} on {holder.get('host')} "
+            f"(Slurm job {holder.get('job') or 'none'}). "
+            "Stop it, or delete RUNNING.json if you know it is gone."
+        )
     (run_dir / "config.json").write_text(json.dumps(asdict(config), indent=2) + "\n")
 
     metadata = Metadata.load(config.data_path)
@@ -159,6 +168,7 @@ def train(config: TrainConfig, device: torch.device) -> Path:
     validation = TrajectoryStore(config.data_path, "valid", metadata.dim)
     rollout_steps = metadata.sequence_length - INPUT_SEQUENCE_LENGTH
 
+    lock = RunLock(run_dir).__enter__()
     curve = (run_dir / "curve.jsonl").open("a")
     started = time.perf_counter()
     running = 0.0
@@ -217,6 +227,7 @@ def train(config: TrainConfig, device: torch.device) -> Path:
             }
             curve.write(json.dumps(record) + "\n")
             curve.flush()
+            lock.beat()
             print(
                 f"step {step:>9d}  loss {record['loss']:.5f}  "
                 f"lr {record['lr']:.2e}  {record['steps_per_second']:.1f} it/s",
@@ -244,6 +255,7 @@ def train(config: TrainConfig, device: torch.device) -> Path:
     if step % config.eval_every != 0:
         evaluate(step)
     curve.close()
+    lock.__exit__(None, None, None)
     return run_dir
 
 

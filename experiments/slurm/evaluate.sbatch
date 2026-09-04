@@ -7,6 +7,10 @@
 #SBATCH --job-name=gns-evaluate
 #SBATCH --partition=gpu
 #SBATCH --gpus=1
+# Full GPUs only. workergpu037 and workergpu067 publish MIG slices
+# (a100_2g.20gb), which --gpus=1 happily matches and which run this model at
+# roughly a fifth of the rate. Override with sbatch --constraint=... to widen.
+#SBATCH --constraint="a100-80gb|h100-80gb|rtxblackwell"
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=48G
 #SBATCH --time=08:00:00

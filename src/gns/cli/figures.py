@@ -34,6 +34,19 @@ def load_results(directory: Path, pattern: str = "**/result_test_best.json") -> 
     return results
 
 
+def headline(results: dict) -> dict:
+    """Drop the ablation runs.
+
+    Every ablation trains on Goop, so without this the Table 1 figure and table
+    would show eighteen Goop rows instead of one.
+    """
+    return {
+        name: result
+        for name, result in results.items()
+        if "ablation_axis" not in result
+    }
+
+
 def _bar_panel(ax, labels, ours, reference, ylabel, title, baseline=None):
     x = np.arange(len(labels))
     width = 0.38
@@ -61,7 +74,9 @@ def figure_table1(results: dict, out: Path, convention: str) -> Path:
     """Table 1: one-step and rollout MSE beside the published values."""
     key = "free_particles" if convention == "free" else "all_particles"
     rows = [
-        (r["dataset"], r) for r in results.values() if r["dataset"] in paper.TABLE_1
+        (r["dataset"], r)
+        for r in headline(results).values()
+        if r["dataset"] in paper.TABLE_1
     ]
     rows.sort(key=lambda item: item[0])
     labels = [name for name, _ in rows]
@@ -102,6 +117,8 @@ def figure_table1(results: dict, out: Path, convention: str) -> Path:
 def figure_error_vs_time(results: dict, out: Path) -> Path:
     """Figure C.3: rollout error as a function of rollout step."""
     fig, ax = plt.subplots(figsize=(5, 3.4))
+    colors = plt.get_cmap("viridis")(np.linspace(0.1, 0.8, max(len(results), 1)))
+    results = headline(results)
     colors = plt.get_cmap("viridis")(np.linspace(0.1, 0.8, max(len(results), 1)))
     for color, result in zip(colors, sorted(results.values(), key=lambda r: r["dataset"])):
         curve = np.asarray(result["per_step_rollout_mse"])
@@ -213,7 +230,7 @@ def write_table(results: dict, out: Path) -> Path:
         "| rollout (free) | rollout (all) | paper rollout |"
     )
     lines = [header, "| --- " * 8 + "|"]
-    for result in sorted(results.values(), key=lambda r: r["dataset"]):
+    for result in sorted(headline(results).values(), key=lambda r: r["dataset"]):
         name = result["dataset"]
         known = name in paper.TABLE_1
         lines.append(

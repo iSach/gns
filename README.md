@@ -17,14 +17,49 @@ why.
 This is a baseline for later work, so the priority is that the numbers are
 defensible and the code is reusable, not that it is clever.
 
-## What is reproduced
+## Results
 
-| target | figure | status |
-| --- | --- | --- |
-| One-step and rollout MSE on Goop, WaterRamps, SandRamps | Table 1 / C.4 | `figures/table1.png` |
-| Rollout error as a function of rollout step | Figure C.3 | `figures/error_vs_time.png` |
-| Ablations on Goop: message passing steps, shared processor, connectivity radius, noise scale, relative encoder | Figure 4(a-j) | `figures/ablations.png` |
-| Qualitative rollouts against ground truth | Figure 3 | `figures/rollout_*.png` |
+Four figures are reproduced from our own runs. Full numbers, and the step count
+behind each, are in [`docs/RESULTS.md`](docs/RESULTS.md).
+
+### Table 1: one-step and rollout error
+
+![Table 1](docs/figures/table1.png)
+
+| dataset | one-step MSE | paper | rollout MSE | paper | steps |
+| --- | --- | --- | --- | --- | --- |
+| Goop | 9.07e-09 | 2.91e-09 | 8.23e-03 | 1.89e-03 | 1.9M |
+| SandRamps | 9.62e-09 | 2.77e-09 | 7.42e-03 | 2.07e-03 | 1.3M |
+| WaterRamps | 1.31e-08 | 4.91e-09 | 2.11e-02 | 1.16e-02 | 1.0M |
+
+Within 1.8x to 4.4x of the published values, at a fraction of the paper's 20M
+gradient steps. The dashed line in the figure is a no-model baseline that
+predicts zero acceleration, which scores exactly the mean squared acceleration;
+these models sit two to three times below it, the paper's roughly eight times.
+
+### Figure 4: ablations on Goop
+
+![Ablations](docs/figures/ablations.png)
+
+All five of the paper's conclusions reproduce. More message-passing steps is
+better; unshared processor parameters beat shared ones, and by more on rollout
+than on one-step; a larger connectivity radius is better; the relative encoder
+is far better than an absolute one. The noise panel reproduces both effects the
+paper describes: one-step accuracy falls monotonically as noise grows, while
+rollout accuracy is best at an intermediate scale.
+
+Every bar is one seed at a fixed 400k steps. The paper plots medians and
+quartiles over seeds, so differences smaller than the run-to-run spread should
+not be read as real.
+
+### Figure 3: rollouts against ground truth
+
+![SandRamps rollout](docs/figures/rollout_SandRamps_test_7.png)
+![WaterRamps rollout](docs/figures/rollout_WaterRamps_test_3.png)
+
+### Figure C.3: where the rollout error accumulates
+
+![Error over time](docs/figures/error_vs_time.png)
 
 ## Install
 
@@ -66,7 +101,7 @@ uv run python -m gns.cli.evaluate --checkpoint runs/goop/best.pt --split test
 uv run python -m gns.cli.render --checkpoint runs/goop/best.pt --trajectory 0 --video
 
 # Every figure from every evaluated run.
-uv run python -m gns.cli.figures all --results runs --out figures
+uv run python -m gns.cli.figures all --results runs --out docs/figures
 ```
 
 Checkpoints are selected on validation rollout MSE over five held-out

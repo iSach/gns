@@ -99,6 +99,19 @@ one after another, because a single process leaves the GPU idle while it waits
 on the loader. The data loader is not the bottleneck at 3 workers, but only four
 CPU cores are available on this box, so do not raise `--num-workers` much.
 
+## Operational traps
+
+- **Never edit a script while a job is running it.** Bash reads a script
+  incrementally by byte offset, so editing `experiments/evaluate_all.sh` mid-job
+  made it resume inside a word and try to run `ll` instead of `figures all`. The
+  whole evaluation had already succeeded; only the last line died. Copy the
+  script, or wait.
+- **`--gpus=1` matches a MIG slice.** Two nodes here publish `a100_2g.20gb`, and
+  landing on one costs a factor of five. The Slurm jobs constrain to full GPUs.
+- **A Slurm batch script runs from a spool copy**, so `$0` is not in the
+  repository. `tests/test_slurm_scripts.py` reproduces that and would have
+  caught it.
+
 ## Hard rules
 
 - Checkpoint selection uses validation rollout MSE only. The test split is read

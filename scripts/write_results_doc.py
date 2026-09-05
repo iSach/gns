@@ -25,14 +25,26 @@ def main() -> int:
     parser.add_argument("--results", required=True, type=Path)
     parser.add_argument("--out", type=Path, default=Path("docs/RESULTS.md"))
     parser.add_argument("--pattern", default="**/result_test_best.json")
+    parser.add_argument(
+        "--ablation-pattern", default="**/result_test_latest.json"
+    )
     args = parser.parse_args()
 
-    results = [
-        json.loads(path.read_text())
-        for path in sorted(args.results.glob(args.pattern))
+    def load(pattern):
+        return [
+            json.loads(path.read_text())
+            for path in sorted(args.results.glob(pattern))
+        ]
+
+    # Table 1 quotes the validation-selected checkpoint, as the paper does; the
+    # ablations quote the final one so every configuration is at 400k steps.
+    headline = [
+        r
+        for r in load(args.pattern)
+        if r["dataset"] in paper.TABLE_1 and "ablation_axis" not in r
     ]
-    headline = [r for r in results if r["dataset"] in paper.TABLE_1 and "ablation_axis" not in r]
     headline.sort(key=lambda r: r["dataset"])
+    ablations = [r for r in load(args.ablation_pattern) if "ablation_axis" in r]
 
     lines = [
         "# Results",
@@ -85,7 +97,6 @@ def main() -> int:
         "",
     ]
 
-    ablations = [r for r in results if "ablation_axis" in r]
     if ablations:
         lines += [
             "## Ablations",
@@ -109,7 +120,7 @@ def main() -> int:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text("\n".join(lines) + "\n")
-    print(f"wrote {args.out} from {len(results)} result files")
+    print(f"wrote {args.out}: {len(headline)} headline, {len(ablations)} ablations")
     return 0
 
 

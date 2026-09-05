@@ -75,6 +75,10 @@ trajectories, as in Section 4.3. The test split is only read by `gns-evaluate`.
 The batch is the paper's nominal two windows. `experiments/table1.sh` and
 `experiments/ablations.sh` are the exact recipes behind the figures above.
 
+`AGENTS.md` documents the architecture and the traps worth knowing before
+changing anything; `docs/REPLICATION.md` records every choice made where the
+paper and the released code disagree.
+
 ## Layout
 
 ```

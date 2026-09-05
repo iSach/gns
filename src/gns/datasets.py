@@ -37,7 +37,10 @@ def data_root() -> Path:
     root = os.environ.get("GNS_DATA_ROOT")
     if root:
         return Path(root)
-    return Path.home() / "ceph" / "gns-repro" / "datasets"
+    raise RuntimeError(
+        "Set GNS_DATA_ROOT to the directory holding the converted datasets, "
+        "or pass --data-path explicitly."
+    )
 
 
 # Particle-type ids used by the released datasets (see render_rollout.py in the

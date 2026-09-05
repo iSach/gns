@@ -10,8 +10,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-: "${GNS_DATA_ROOT:=/mnt/ceph/users/slewin/gns-repro/datasets}"
-: "${GNS_RUNS:=/mnt/ceph/users/slewin/gns-repro/runs}"
+: "${GNS_DATA_ROOT:?set GNS_DATA_ROOT to the converted datasets}"
+: "${GNS_RUNS:=runs}"
 : "${GNS_STEPS:=3000000}"
 : "${GNS_DATASETS:=Goop WaterRamps SandRamps}"
 export GNS_DATA_ROOT

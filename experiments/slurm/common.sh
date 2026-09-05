@@ -3,9 +3,9 @@
 # Override any of these in the environment before sbatch, e.g.
 #   GNS_STEPS=6000000 sbatch experiments/slurm/table1.sbatch
 
-: "${GNS_REPO:=${SLURM_SUBMIT_DIR:-/mnt/home/slewin/neuralmpm/GNS-dev}}"
-: "${GNS_DATA_ROOT:=/mnt/ceph/users/slewin/gns-repro/datasets}"
-: "${GNS_RUNS:=/mnt/ceph/users/slewin/gns-repro/runs}"
+: "${GNS_REPO:=${SLURM_SUBMIT_DIR:-$PWD}}"
+: "${GNS_DATA_ROOT:?set GNS_DATA_ROOT to the converted datasets}"
+: "${GNS_RUNS:=$GNS_REPO/runs}"
 : "${PYTHON:=$GNS_REPO/.venv/bin/python}"
 export GNS_DATA_ROOT
 

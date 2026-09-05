@@ -3,21 +3,26 @@
 Read `README.md` first for what this is and how to run it. This file adds the
 architecture and the traps that only show up after reading several files.
 
-`/mnt/home/slewin/neuralmpm/PAPER_REPLICATION_PROGRAM.md` is the standing brief
-for the wider program this repository belongs to.
-
 ## What this is
 
 A reimplementation of Sanchez-Gonzalez et al., ICML 2020, kept faithful enough
 to argue about published numbers with. Numerical correctness beats elegance;
-the reference is the authors' TensorFlow code, cloned read-only at
-`/mnt/home/slewin/neuralmpm/.refs/dm-research/learning_to_simulate`.
+the reference is the authors' TensorFlow code, at
+`deepmind-research/learning_to_simulate`. Keep a read-only clone of it beside
+this repository and check any change to the model against it.
 
 ## Where things live
 
-Data root defaults to `$GNS_DATA_ROOT`, in practice
-`/mnt/ceph/users/slewin/gns-repro/datasets`. Raw TFRecords are beside it under
-`raw/`, runs under `runs/`. Nothing on ceph is in Git.
+Three environment variables point at everything outside the repository:
+
+| variable | holds |
+| --- | --- |
+| `GNS_RAW_ROOT` | the released TFRecords, one directory per dataset |
+| `GNS_DATA_ROOT` | the converted HDF5 datasets |
+| `GNS_RUNS` | run directories: checkpoints, `curve.jsonl`, results |
+
+Put all three on scratch or scale storage, not in the repository. Nothing under
+them is in Git.
 
 ## The pipeline
 

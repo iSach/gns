@@ -8,7 +8,7 @@
 # ways that are invisible until the numbers do not match.
 set -euo pipefail
 
-: "${GNS_RAW_ROOT:=${HOME}/ceph/gns-repro/raw}"
+: "${GNS_RAW_ROOT:?set GNS_RAW_ROOT to where the TFRecords should land}"
 BUCKET=https://storage.googleapis.com/learning-to-simulate-complex-physics/Datasets
 
 for dataset in "$@"; do
